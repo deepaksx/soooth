@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: soooth-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: FAL_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: PIXABAY_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:///./soooth.db
+      - key: MEDIA_DIR
+        value: /tmp/media
+
+  - type: web
+    name: soooth-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
