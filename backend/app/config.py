@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = ""
     pixabay_api_key: str = ""
     database_url: str = "sqlite:///./soooth.db"
-    media_dir: Path = Path("C:/Dev/Soooth/media")
+    media_dir: Path = Path("/tmp/media")
 
     # Video generation defaults
     video_model: str = "fal-ai/wan-t2v"
