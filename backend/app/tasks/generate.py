@@ -112,7 +112,7 @@ def cancel_pipeline(job_id: str):
     # Kill any running FFmpeg processes to free files
     try:
         subprocess.run(
-            ["taskkill", "/F", "/IM", "ffmpeg.exe"],
+            ["pkill", "-f", "ffmpeg"],
             capture_output=True, timeout=5
         )
     except Exception:

@@ -5,9 +5,8 @@ from pathlib import Path
 from app.config import settings
 
 # Find FFmpeg binaries
-_FFMPEG_DIR = Path(r"C:\Users\deepa\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.0.1-full_build\bin")
-FFMPEG = str(_FFMPEG_DIR / "ffmpeg.exe") if _FFMPEG_DIR.exists() else shutil.which("ffmpeg") or "ffmpeg"
-FFPROBE = str(_FFMPEG_DIR / "ffprobe.exe") if _FFMPEG_DIR.exists() else shutil.which("ffprobe") or "ffprobe"
+FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
+FFPROBE = shutil.which("ffprobe") or "ffprobe"
 
 
 def get_duration(file_path: Path) -> float:
