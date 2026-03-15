@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = import.meta.env.PROD
+  ? "https://soooth-backend.onrender.com/api"
+  : "http://localhost:8000/api";
 
 export interface Job {
   id: string;
