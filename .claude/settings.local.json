@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm create:*)",
+      "Bash(cd frontend:*)",
+      "Bash(npx tsc:*)",
+      "Bash(cd:*)",
+      "Bash(where python3:*)",
+      "Read(//c/Users/deepa/AppData/Local/Programs/**)",
+      "Bash(ls /c/Python*/python.exe)",
+      "Bash(where ffmpeg:*)",
+      "Bash(winget install:*)",
+      "Bash(export:*)",
+      "Bash(.venv/Scripts/python.exe -c \"from app.main import app; print\\('Backend OK:', app.title\\)\" 2>&1)"
+    ]
+  }
+}
