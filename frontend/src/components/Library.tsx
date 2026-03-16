@@ -5,11 +5,10 @@ const API_BASE = import.meta.env.PROD
   : "http://localhost:8001/api";
 
 interface VideoFile {
-  filename: string;
-  path: string;
+  key: string;
+  url: string;
   size: number;
-  size_mb: number;
-  modified: number;
+  last_modified: string;
 }
 
 export function Library() {
@@ -24,7 +23,8 @@ export function Library() {
 
   const loadVideos = async () => {
     try {
-      const res = await fetch(`${API_BASE}/library/local-output`);
+      // Use S3 library for production (persistent storage)
+      const res = await fetch(`${API_BASE}/library/output`);
       const data = await res.json();
       setVideos(data.files || []);
     } catch (err) {
@@ -35,15 +35,18 @@ export function Library() {
   };
 
   const uploadToYouTube = async (video: VideoFile) => {
-    setUploading(video.filename);
+    setUploading(video.key);
     setUploadResult(null);
 
     try {
+      // Extract filename from S3 key (e.g., "output/job-id.mp4" -> "job-id.mp4")
+      const filename = video.key.split('/').pop() || video.key;
+
       const res = await fetch(`${API_BASE}/library/upload-to-youtube`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          filename: video.filename,
+          filename: filename,
           privacy: "public",
           // title & description omitted - backend will auto-generate SEO-optimized metadata
         }),
@@ -55,7 +58,7 @@ export function Library() {
       }
 
       const data = await res.json();
-      setUploadResult({ filename: video.filename, url: data.url });
+      setUploadResult({ filename: video.key, url: data.url });
       alert(`✅ Uploaded successfully!\n\nYouTube URL: ${data.url}`);
     } catch (err: any) {
       alert(`❌ Upload failed: ${err.message}`);
@@ -64,13 +67,17 @@ export function Library() {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp * 1000);
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
     return date.toLocaleString();
   };
 
-  const getVideoUrl = (filename: string) => {
-    return `${API_BASE}/library/video/${filename}`;
+  const getFilename = (key: string) => {
+    return key.split('/').pop() || key;
+  };
+
+  const formatSize = (bytes: number) => {
+    return (bytes / (1024 * 1024)).toFixed(2);
   };
 
   if (loading) {
@@ -86,37 +93,37 @@ export function Library() {
       ) : (
         <div className="library-grid">
           {videos.map((video) => (
-            <div key={video.filename} className="library-card">
+            <div key={video.key} className="library-card">
               <div className="library-video">
                 <video
                   controls
                   preload="metadata"
                   className="library-video-player"
-                  src={getVideoUrl(video.filename)}
+                  src={video.url}
                 />
               </div>
 
               <div className="library-info">
-                <div className="library-filename">{video.filename}</div>
+                <div className="library-filename">{getFilename(video.key)}</div>
                 <div className="library-meta">
-                  {video.size_mb} MB • {formatDate(video.modified)}
+                  {formatSize(video.size)} MB • {formatDate(video.last_modified)}
                 </div>
 
                 <button
                   className="library-upload-btn"
                   onClick={() => uploadToYouTube(video)}
-                  disabled={uploading === video.filename}
+                  disabled={uploading === video.key}
                 >
-                  {uploading === video.filename ? (
+                  {uploading === video.key ? (
                     <span>⏳ Uploading...</span>
-                  ) : uploadResult?.filename === video.filename ? (
+                  ) : uploadResult?.filename === video.key ? (
                     <span>✅ Uploaded</span>
                   ) : (
                     <span>📤 Upload to YouTube</span>
                   )}
                 </button>
 
-                {uploadResult?.filename === video.filename && (
+                {uploadResult?.filename === video.key && (
                   <a
                     href={uploadResult.url}
                     target="_blank"
