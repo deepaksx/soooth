@@ -739,3 +739,76 @@ body {
 .library-url a:hover {
   color: #7cb8a0;
 }
+
+/* Library Actions */
+.library-btn {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.library-btn-delete {
+  background: transparent;
+  border-color: #6a3030;
+  color: #e07070;
+}
+
+.library-btn-delete:hover {
+  background: rgba(224, 112, 112, 0.1);
+  border-color: #e07070;
+}
+
+.library-btn-danger {
+  background: #9a3030;
+  border-color: #9a3030;
+  color: #fff;
+}
+
+.library-btn-danger:hover:not(:disabled) {
+  background: #b03838;
+}
+
+.library-btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.library-btn-secondary {
+  background: transparent;
+  border-color: #2a3a30;
+  color: #7cb8a0;
+}
+
+.library-btn-secondary:hover {
+  background: rgba(124, 184, 160, 0.1);
+  border-color: #7cb8a0;
+}
+
+.library-delete-confirm {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(224, 112, 112, 0.1);
+  border: 1px solid #6a3030;
+  border-radius: 6px;
+}
+
+.library-delete-confirm p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: #e07070;
+  text-align: center;
+}
+
+.library-delete-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.library-delete-actions .library-btn {
+  margin-top: 0;
+}

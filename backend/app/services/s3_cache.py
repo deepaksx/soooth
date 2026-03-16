@@ -217,6 +217,36 @@ class S3CacheService:
         finally:
             db.close()
 
+    def delete_file(self, s3_key: str) -> bool:
+        """Delete a file from S3."""
+        if not self.enabled:
+            logger.warning("S3 not enabled, cannot delete file")
+            return False
+
+        try:
+            self.s3_client.delete_object(Bucket=self.bucket, Key=s3_key)
+            logger.info(f"Deleted file from S3: {s3_key}")
+
+            # If it's a video cache entry, also delete from database
+            if s3_key.startswith("videos/"):
+                db = SessionLocal()
+                try:
+                    # Extract filename from key to find the cache entry
+                    filename = s3_key.split('/')[-1]
+                    cache_entry = db.query(VideoCache).filter(VideoCache.s3_url.contains(filename)).first()
+                    if cache_entry:
+                        db.delete(cache_entry)
+                        db.commit()
+                        logger.info(f"Deleted cache entry for: {filename}")
+                finally:
+                    db.close()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to delete file from S3: {e}")
+            return False
+
 
 # Global instance
 s3_cache = S3CacheService()

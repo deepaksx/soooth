@@ -112,6 +112,10 @@ class UploadVideoRequest(BaseModel):
     privacy: str = "public"  # public, unlisted, private
 
 
+class DeleteFileRequest(BaseModel):
+    key: str  # S3 key (e.g., "videos/forest/12345.mp4")
+
+
 @router.post("/upload-to-youtube")
 async def upload_video_to_youtube(request: UploadVideoRequest):
     """Upload an existing video from output folder to YouTube."""
@@ -183,3 +187,29 @@ async def upload_video_to_youtube(request: UploadVideoRequest):
     except Exception as e:
         logger.error(f"YouTube upload failed: {e}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@router.delete("/delete")
+async def delete_file_from_s3(request: DeleteFileRequest):
+    """Delete a file from S3 storage."""
+    try:
+        logger.info(f"Deleting file from S3: {request.key}")
+
+        if not s3_cache.enabled:
+            raise HTTPException(status_code=503, detail="S3 storage is not enabled")
+
+        success = s3_cache.delete_file(request.key)
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete file from S3")
+
+        return {
+            "success": True,
+            "message": f"File deleted successfully: {request.key}"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")

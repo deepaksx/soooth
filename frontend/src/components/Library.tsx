@@ -19,6 +19,8 @@ export function Library() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<{ filename: string; url: string } | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadFiles(activeFolder);
@@ -68,6 +70,34 @@ export function Library() {
       alert(`❌ Upload failed: ${err.message}`);
     } finally {
       setUploading(null);
+    }
+  };
+
+  const deleteFile = async (video: VideoFile) => {
+    setDeleting(video.key);
+
+    try {
+      const res = await fetch(`${API_BASE}/library/delete`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: video.key,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || "Delete failed");
+      }
+
+      // Remove from local state
+      setFiles(files.filter(f => f.key !== video.key));
+      setConfirmDelete(null);
+      alert(`✅ Deleted successfully: ${getFilename(video.key)}`);
+    } catch (err: any) {
+      alert(`❌ Delete failed: ${err.message}`);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -169,6 +199,34 @@ export function Library() {
                     🔗 Direct Link
                   </a>
                 </div>
+
+                {confirmDelete === video.key ? (
+                  <div className="library-delete-confirm">
+                    <p>Delete this file?</p>
+                    <div className="library-delete-actions">
+                      <button
+                        className="library-btn library-btn-danger"
+                        onClick={() => deleteFile(video)}
+                        disabled={deleting === video.key}
+                      >
+                        {deleting === video.key ? "Deleting..." : "Yes, Delete"}
+                      </button>
+                      <button
+                        className="library-btn library-btn-secondary"
+                        onClick={() => setConfirmDelete(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="library-btn library-btn-delete"
+                    onClick={() => setConfirmDelete(video.key)}
+                  >
+                    🗑️ Delete File
+                  </button>
+                )}
 
                 {activeFolder === "output" && isVideo(video.key) && (
                   <>
