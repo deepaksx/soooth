@@ -19,13 +19,13 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
     """
     # Try to use cached videos first
     if themes and s3_cache.enabled:
-        cached_videos = s3_cache.get_cached_videos(themes, min_count=8)
+        cached_videos = s3_cache.get_cached_videos(themes, min_count=4)
         if cached_videos:
             logger.info(f"Using {len(cached_videos)} cached videos from S3")
             clip_paths = []
 
-            # Download cached videos from S3
-            for cached in random.sample(cached_videos, min(8, len(cached_videos))):
+            # Download cached videos from S3 (limit to 4 for memory)
+            for cached in random.sample(cached_videos, min(4, len(cached_videos))):
                 output_path = settings.media_dir / "videos" / f"{uuid.uuid4()}.mp4"
                 if s3_cache.download_video(cached.s3_key, output_path):
                     clip_paths.append(output_path)
@@ -95,9 +95,10 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
         landscape_hits.sort(key=lambda h: h.get("duration", 0), reverse=True)
 
         # Pick enough clips to cover target duration
-        # Aim for ~8 unique clips max, FFmpeg will loop the concatenated result
-        num_clips = min(8, len(landscape_hits))
-        selected = random.sample(landscape_hits[:20], min(num_clips, len(landscape_hits[:20])))
+        # Limit to 4 clips to reduce memory usage (Render Standard has 2GB RAM)
+        # FFmpeg will loop the concatenated result to reach target duration
+        num_clips = min(4, len(landscape_hits))
+        selected = random.sample(landscape_hits[:15], min(num_clips, len(landscape_hits[:15])))
 
         # Download each video
         clip_paths = []

@@ -92,6 +92,16 @@ async def run_generation_pipeline(job_id: str, db_session_factory):
         slowdown = 1.0 if job.video_source == "stock" else 2.0
         concat_video = concat_clips_with_crossfade(clip_paths, job.duration, slowdown=slowdown)
 
+        # Clean up individual clips to free memory (keep only concat video)
+        import logging
+        logger = logging.getLogger("soooth.generate")
+        for clip in clip_paths:
+            try:
+                clip.unlink()
+                logger.info(f"Cleaned up temp clip: {clip.name}")
+            except Exception:
+                pass
+
         # Check if cancelled before final merge
         if is_cancelled(job_id, db_session_factory):
             return
@@ -109,6 +119,14 @@ async def run_generation_pipeline(job_id: str, db_session_factory):
             if s3_url:
                 job.output_path = s3_url
                 db.commit()
+
+                # Clean up local files after S3 upload to free memory
+                try:
+                    if concat_video.exists():
+                        concat_video.unlink()
+                        logger.info("Cleaned up concat video after S3 upload")
+                except Exception:
+                    pass
 
         # Upload to YouTube if requested
         if job.upload_youtube == "true":
