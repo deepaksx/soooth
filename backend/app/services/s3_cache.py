@@ -181,8 +181,8 @@ class S3CacheService:
             logger.error(f"Failed to download video from S3: {e}")
             return False
 
-    def get_cached_videos(self, themes: list[str], min_count: int = 8) -> list[VideoCache]:
-        """Get cached videos for given themes from database."""
+    def get_cached_videos(self, themes: list[str], min_count: int = 8) -> list[dict]:
+        """Get cached videos for given themes from database. Returns list of dicts."""
         if not self.enabled:
             return []
 
@@ -199,17 +199,31 @@ class S3CacheService:
                     video.last_used = datetime.now(timezone.utc)
                 db.commit()
 
-                # Detach objects from session so they can be used after session closes
-                db.expunge_all()
-                return cached
+                # Force load all attributes before detaching
+                result = []
+                for video in cached:
+                    result.append({
+                        'id': video.id,
+                        'pixabay_id': video.pixabay_id,
+                        'theme': video.theme,
+                        's3_key': video.s3_key,
+                        's3_url': video.s3_url,
+                        'duration': video.duration,
+                        'width': video.width,
+                        'height': video.height,
+                        'file_size': video.file_size,
+                        'created_at': video.created_at,
+                        'last_used': video.last_used,
+                    })
+                return result
             else:
                 logger.info(f"Not enough cached videos ({len(cached)}/{min_count}) for themes: {themes}")
                 return []
         finally:
             db.close()
 
-    def is_video_cached(self, pixabay_id: str) -> Optional[VideoCache]:
-        """Check if a video is already cached."""
+    def is_video_cached(self, pixabay_id: str) -> Optional[dict]:
+        """Check if a video is already cached. Returns dict instead of VideoCache object."""
         if not self.enabled:
             return None
 
@@ -217,9 +231,19 @@ class S3CacheService:
         try:
             cached = db.query(VideoCache).filter(VideoCache.pixabay_id == pixabay_id).first()
             if cached:
-                # Detach object from session so it can be used after session closes
-                db.expunge(cached)
-            return cached
+                # Return dict to avoid session binding issues
+                return {
+                    'id': cached.id,
+                    'pixabay_id': cached.pixabay_id,
+                    'theme': cached.theme,
+                    's3_key': cached.s3_key,
+                    's3_url': cached.s3_url,
+                    'duration': cached.duration,
+                    'width': cached.width,
+                    'height': cached.height,
+                    'file_size': cached.file_size,
+                }
+            return None
         finally:
             db.close()
 

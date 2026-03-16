@@ -27,7 +27,8 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
             # Download cached videos from S3 (limit to 4 for memory)
             for cached in random.sample(cached_videos, min(4, len(cached_videos))):
                 output_path = settings.media_dir / "videos" / f"{uuid.uuid4()}.mp4"
-                if s3_cache.download_video(cached.s3_key, output_path):
+                # cached is now a dict, not an object
+                if s3_cache.download_video(cached['s3_key'], output_path):
                     clip_paths.append(output_path)
 
             if len(clip_paths) >= 2:
@@ -116,7 +117,8 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
                 if cached:
                     logger.info(f"Video {pixabay_id} already cached, downloading from S3")
                     output_path = settings.media_dir / "videos" / f"{uuid.uuid4()}.mp4"
-                    if s3_cache.download_video(cached.s3_key, output_path):
+                    # cached is now a dict, not an object
+                    if s3_cache.download_video(cached['s3_key'], output_path):
                         clip_paths.append(output_path)
                         continue
 
