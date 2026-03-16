@@ -47,7 +47,11 @@ class VideoCache(Base):
     last_used = Column(DateTime, nullable=True)  # Track when last used for LRU cleanup
 
 
-engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
+# Create engine with appropriate connect_args based on database type
+if settings.database_url.startswith("sqlite"):
+    engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(bind=engine)
 
 Base.metadata.create_all(bind=engine)
