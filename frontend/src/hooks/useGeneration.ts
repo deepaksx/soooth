@@ -72,16 +72,25 @@ export function useGeneration() {
   }, [startPolling]);
 
   const generate = useCallback(
-    async (theme: string, duration: number = 60, videoSource: string = "ai", uploadYoutube: boolean = false) => {
+    async (theme: string, duration: number = 60, videoSource: string = "ai", uploadYoutube: boolean = false, noAudio: boolean = false, customVideoPrompt?: string, customMusicPrompt?: string, batchCount: number = 1, customAudio?: File) => {
       setLoading(true);
       setError(null);
       stopPolling();
 
       try {
-        const newJob = await startGeneration(theme, duration, videoSource, uploadYoutube);
-        setJob(newJob);
-        localStorage.setItem("soooth_job_id", newJob.id);
-        startPolling(newJob.id);
+        const batchResponse = await startGeneration(theme, duration, videoSource, uploadYoutube, noAudio, customVideoPrompt, customMusicPrompt, batchCount, customAudio);
+
+        // For now, track the first job (we can enhance this later to show all jobs)
+        const firstJob = batchResponse.jobs[0];
+        setJob(firstJob);
+        localStorage.setItem("soooth_job_id", firstJob.id);
+        startPolling(firstJob.id);
+
+        // Store all job IDs for batch tracking
+        if (batchResponse.batch_count > 1) {
+          const jobIds = batchResponse.jobs.map(j => j.id);
+          localStorage.setItem("soooth_batch_ids", JSON.stringify(jobIds));
+        }
       } catch (err) {
         setError(String(err));
         setLoading(false);

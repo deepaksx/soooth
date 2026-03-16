@@ -5,8 +5,8 @@ from pathlib import Path
 from app.config import settings
 
 # Find FFmpeg binaries
-FFMPEG = shutil.which("ffmpeg") or "ffmpeg"
-FFPROBE = shutil.which("ffprobe") or "ffprobe"
+FFMPEG = shutil.which("ffmpeg") or "C:\\ffmpeg\\bin\\ffmpeg.exe"
+FFPROBE = shutil.which("ffprobe") or "C:\\ffmpeg\\bin\\ffprobe.exe"
 
 
 def get_duration(file_path: Path) -> float:
@@ -85,7 +85,9 @@ def concat_clips_with_crossfade(clip_paths: list[Path], target_duration: int = 6
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
-        raise RuntimeError(f"FFmpeg concat failed: {proc.stderr[:500]}")
+        # Get last 1000 chars of stderr (actual error is at the end)
+        error_msg = proc.stderr[-1000:] if len(proc.stderr) > 1000 else proc.stderr
+        raise RuntimeError(f"FFmpeg concat failed: {error_msg}")
 
     return output_path
 
@@ -122,6 +124,8 @@ def merge_audio_video(video_path: Path, audio_path: Path, duration: int = 60) ->
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
-        raise RuntimeError(f"FFmpeg merge failed: {proc.stderr[:500]}")
+        # Get last 1000 chars of stderr (actual error is at the end)
+        error_msg = proc.stderr[-1000:] if len(proc.stderr) > 1000 else proc.stderr
+        raise RuntimeError(f"FFmpeg merge failed: {error_msg}")
 
     return output_path

@@ -9,6 +9,13 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./soooth.db"
     media_dir: Path = Path("/tmp/media")
 
+    # AWS S3 for video caching and storage (REQUIRED for production)
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-east-1"
+    s3_bucket_name: str = "soooth-media-library"
+    use_s3_cache: bool = False  # Enable in production via env var
+
     # Video generation defaults
     video_model: str = "fal-ai/wan-t2v"
     video_duration: int = 5  # fal.ai generates short clips, we loop them

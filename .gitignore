@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+.env.local
+.env.production
 __pycache__/
 *.pyc
 *.db
@@ -8,3 +10,6 @@ media/videos/
 media/audio/
 media/output/
 .venv/
+youtube.json
+youtube_token.json
+*.log

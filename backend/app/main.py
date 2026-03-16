@@ -4,7 +4,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import generate, videos
+from app.routers import generate, videos, library
 
 app = FastAPI(
     title="Soooth",
@@ -17,6 +17,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://soooth-frontend.onrender.com",
+        "https://soooth-frontend.onrender.com",
+        "*",  # Allow all origins for now - can restrict later
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -25,6 +27,7 @@ app.add_middleware(
 
 app.include_router(generate.router)
 app.include_router(videos.router)
+app.include_router(library.router)
 
 
 @app.get("/api/health")

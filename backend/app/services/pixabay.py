@@ -1,34 +1,86 @@
 import uuid
 import random
 import httpx
+import logging
 from pathlib import Path
 from app.config import settings
+from app.services.s3_cache import s3_cache
+
+logger = logging.getLogger("soooth.pixabay")
 
 
-async def search_and_download_videos(query: str, target_duration: int = 60) -> list[Path]:
+async def search_and_download_videos(query: str, target_duration: int = 60, themes: list[str] = None) -> list[Path]:
     """Search Pixabay for stock videos and download enough to cover target duration.
 
     Downloads 6-10 clips, preferring longer videos. FFmpeg will loop if needed.
-    """
-    async with httpx.AsyncClient(timeout=120) as client:
-        # Search for videos — get more results to pick from
-        resp = await client.get(
-            "https://pixabay.com/api/videos/",
-            params={
-                "key": settings.pixabay_api_key,
-                "q": query,
-                "video_type": "film",
-                "per_page": 50,
-                "safesearch": "true",
-                "order": "popular",
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    If multiple themes provided, randomly mix videos from all themes.
 
-        hits = data.get("hits", [])
-        if not hits:
-            raise RuntimeError(f"No Pixabay videos found for: {query}")
+    First checks S3 cache for existing videos before downloading from Pixabay.
+    """
+    # Try to use cached videos first
+    if themes and s3_cache.enabled:
+        cached_videos = s3_cache.get_cached_videos(themes, min_count=8)
+        if cached_videos:
+            logger.info(f"Using {len(cached_videos)} cached videos from S3")
+            clip_paths = []
+
+            # Download cached videos from S3
+            for cached in random.sample(cached_videos, min(8, len(cached_videos))):
+                output_path = settings.media_dir / "videos" / f"{uuid.uuid4()}.mp4"
+                if s3_cache.download_video(cached.s3_key, output_path):
+                    clip_paths.append(output_path)
+
+            if len(clip_paths) >= 2:
+                logger.info(f"Successfully retrieved {len(clip_paths)} videos from cache")
+                return clip_paths
+            else:
+                logger.warning("Failed to download enough cached videos, falling back to Pixabay")
+
+    # Fall back to downloading from Pixabay
+    async with httpx.AsyncClient(timeout=120) as client:
+        all_hits = []
+
+        # If multiple themes provided, search for each and combine results
+        if themes and len(themes) > 1:
+            for theme_id in themes:
+                search_query = PIXABAY_SEARCH_TERMS.get(theme_id, theme_id)
+                resp = await client.get(
+                    "https://pixabay.com/api/videos/",
+                    params={
+                        "key": settings.pixabay_api_key,
+                        "q": search_query,
+                        "video_type": "film",
+                        "per_page": 20,
+                        "safesearch": "true",
+                        "order": "popular",
+                    },
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    all_hits.extend(data.get("hits", []))
+
+            hits = all_hits
+            if not hits:
+                raise RuntimeError(f"No Pixabay videos found for selected themes")
+        else:
+            # Single theme search
+            resp = await client.get(
+                "https://pixabay.com/api/videos/",
+                params={
+                    "key": settings.pixabay_api_key,
+                    "q": query,
+                    "video_type": "film",
+                    "per_page": 50,
+                    "safesearch": "true",
+                    "order": "popular",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            hits = data.get("hits", [])
+            if not hits:
+                raise RuntimeError(f"No Pixabay videos found for: {query}")
 
         # Filter for landscape/horizontal videos only
         landscape_hits = [
@@ -55,11 +107,38 @@ async def search_and_download_videos(query: str, target_duration: int = 60) -> l
             if not video_info or not video_info.get("url"):
                 continue
 
+            pixabay_id = str(hit.get("id", uuid.uuid4()))
+
+            # Check if already cached in S3
+            if s3_cache.enabled:
+                cached = s3_cache.is_video_cached(pixabay_id)
+                if cached:
+                    logger.info(f"Video {pixabay_id} already cached, downloading from S3")
+                    output_path = settings.media_dir / "videos" / f"{uuid.uuid4()}.mp4"
+                    if s3_cache.download_video(cached.s3_key, output_path):
+                        clip_paths.append(output_path)
+                        continue
+
+            # Download from Pixabay
             output_path = settings.media_dir / "videos" / f"{uuid.uuid4()}.mp4"
             video_resp = await client.get(video_info["url"])
             video_resp.raise_for_status()
             output_path.write_bytes(video_resp.content)
             clip_paths.append(output_path)
+
+            # Upload to S3 cache
+            if s3_cache.enabled and themes:
+                theme_for_cache = themes[0] if len(themes) == 1 else "mixed"
+                s3_cache.upload_video(
+                    output_path,
+                    theme=theme_for_cache,
+                    pixabay_id=pixabay_id,
+                    search_query=query,
+                    duration=hit.get("duration", 10),
+                    width=video_info.get("width"),
+                    height=video_info.get("height")
+                )
+                logger.info(f"Uploaded video {pixabay_id} to S3 cache")
 
         if len(clip_paths) < 2:
             raise RuntimeError(f"Only {len(clip_paths)} Pixabay clips downloaded — need at least 2")
@@ -75,4 +154,13 @@ PIXABAY_SEARCH_TERMS = {
     "mountain": "mountain peaks clouds sunrise aerial",
     "meadow": "wildflower meadow breeze nature",
     "starry_night": "milky way stars night sky timelapse",
+    "sunset": "sunset golden hour horizon nature",
+    "waterfall": "waterfall cascade water nature",
+    "lake": "lake reflection calm water nature",
+    "beach": "beach sandy shore waves ocean",
+    "clouds": "clouds sky timelapse nature",
+    "snow": "snow winter snowfall nature",
+    "desert": "desert sand dunes sunset nature",
+    "aurora": "aurora northern lights night sky",
+    "flowers": "flowers blooming nature closeup",
 }

@@ -2,27 +2,47 @@ services:
   - type: web
     name: soooth-backend
     runtime: python
+    plan: starter
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      # API Keys
       - key: FAL_KEY
-        sync: false
-      - key: ELEVENLABS_API_KEY
         sync: false
       - key: PIXABAY_API_KEY
         sync: false
+
+      # AWS S3 Configuration (REQUIRED for production)
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: S3_BUCKET_NAME
+        value: soooth-media-library
+      - key: USE_S3_CACHE
+        value: true
+
+      # Database (SQLite for now, can upgrade to PostgreSQL later)
       - key: DATABASE_URL
         value: sqlite:///./soooth.db
+
+      # Media storage (local temp, but S3 is primary)
       - key: MEDIA_DIR
         value: /tmp/media
 
   - type: web
     name: soooth-frontend
     runtime: static
+    plan: starter
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://soooth-backend.onrender.com
     headers:
       - path: /*
         name: Cache-Control
