@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 const STOCK_THEMES = [
   { id: "forest", label: "Forest", emoji: "🌲", desc: "Misty forest at sunrise" },
@@ -48,7 +48,6 @@ export function GenerateForm({ onGenerate, disabled }: Props) {
   const [batchCount, setBatchCount] = useState(1);
   const [customAudio, setCustomAudio] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   const finalDuration =
     tab === "stock" && audioMode === "custom" && audioDuration
