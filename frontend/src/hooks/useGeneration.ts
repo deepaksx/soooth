@@ -72,13 +72,13 @@ export function useGeneration() {
   }, [startPolling]);
 
   const generate = useCallback(
-    async (theme: string, duration: number = 60, videoSource: string = "ai") => {
+    async (theme: string, duration: number = 60, videoSource: string = "ai", uploadYoutube: boolean = false) => {
       setLoading(true);
       setError(null);
       stopPolling();
 
       try {
-        const newJob = await startGeneration(theme, duration, videoSource);
+        const newJob = await startGeneration(theme, duration, videoSource, uploadYoutube);
         setJob(newJob);
         localStorage.setItem("soooth_job_id", newJob.id);
         startPolling(newJob.id);

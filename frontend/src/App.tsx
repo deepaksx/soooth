@@ -16,14 +16,14 @@ function App() {
       </header>
 
       <main className="main">
-        <GenerateForm onGenerate={(theme, dur, src) => generate(theme, dur, src)} disabled={loading} />
+        <GenerateForm onGenerate={(theme, dur, src, yt) => generate(theme, dur, src, yt)} disabled={loading} />
 
         {job && !isComplete && <ProgressTracker job={job} onCancel={cancel} />}
 
         {error && !job?.error && <p className="error">{error}</p>}
 
         {isComplete && job && (
-          <VideoPlayer jobId={job.id} theme={job.theme} />
+          <VideoPlayer jobId={job.id} theme={job.theme} youtubeId={job.youtube_id} />
         )}
       </main>
 

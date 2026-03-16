@@ -5,17 +5,20 @@ from pathlib import Path
 from app.config import settings
 
 
-async def search_and_download_videos(query: str, num_clips: int = 6) -> list[Path]:
-    """Search Pixabay for stock videos and download them."""
-    async with httpx.AsyncClient(timeout=60) as client:
-        # Search for videos
+async def search_and_download_videos(query: str, target_duration: int = 60) -> list[Path]:
+    """Search Pixabay for stock videos and download enough to cover target duration.
+
+    Downloads 6-10 clips, preferring longer videos. FFmpeg will loop if needed.
+    """
+    async with httpx.AsyncClient(timeout=120) as client:
+        # Search for videos — get more results to pick from
         resp = await client.get(
             "https://pixabay.com/api/videos/",
             params={
                 "key": settings.pixabay_api_key,
                 "q": query,
                 "video_type": "film",
-                "per_page": 30,
+                "per_page": 50,
                 "safesearch": "true",
                 "order": "popular",
             },
@@ -27,14 +30,27 @@ async def search_and_download_videos(query: str, num_clips: int = 6) -> list[Pat
         if not hits:
             raise RuntimeError(f"No Pixabay videos found for: {query}")
 
-        # Pick random selection from top results for variety
-        selected = random.sample(hits, min(num_clips, len(hits)))
+        # Filter for landscape/horizontal videos only
+        landscape_hits = [
+            h for h in hits
+            if h.get("videos", {}).get("large", {}).get("width", 0)
+            >= h.get("videos", {}).get("large", {}).get("height", 999)
+        ]
+        if not landscape_hits:
+            landscape_hits = hits
 
-        # Download each video (prefer "medium" size for good quality + speed)
+        # Sort by duration (longest first) to minimize number of clips needed
+        landscape_hits.sort(key=lambda h: h.get("duration", 0), reverse=True)
+
+        # Pick enough clips to cover target duration
+        # Aim for ~8 unique clips max, FFmpeg will loop the concatenated result
+        num_clips = min(8, len(landscape_hits))
+        selected = random.sample(landscape_hits[:20], min(num_clips, len(landscape_hits[:20])))
+
+        # Download each video
         clip_paths = []
         for hit in selected:
             videos = hit.get("videos", {})
-            # Prefer large > medium > small
             video_info = videos.get("large") or videos.get("medium") or videos.get("small")
             if not video_info or not video_info.get("url"):
                 continue

@@ -38,6 +38,7 @@ THEME_PROMPTS = {
 class GenerateRequest(BaseModel):
     theme: str = "forest"
     video_source: str = "ai"  # "ai" or "stock"
+    upload_youtube: bool = False
     custom_video_prompt: Optional[str] = None
     custom_music_prompt: Optional[str] = None
     duration: int = 60
@@ -48,6 +49,7 @@ class JobResponse(BaseModel):
     status: str
     theme: str
     duration: int
+    youtube_id: Optional[str] = None
     error: Optional[str] = None
     created_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

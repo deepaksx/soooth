@@ -20,6 +20,8 @@ class Job(Base):
     audio_path = Column(String, nullable=True)
     output_path = Column(String, nullable=True)
     duration = Column(Integer, default=60)
+    upload_youtube = Column(String, default="false")
+    youtube_id = Column(String, nullable=True)
     error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)

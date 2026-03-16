@@ -7,6 +7,7 @@ export interface Job {
   status: string;
   theme: string;
   duration: number;
+  youtube_id: string | null;
   error: string | null;
   created_at: string | null;
   completed_at: string | null;
@@ -15,12 +16,13 @@ export interface Job {
 export async function startGeneration(
   theme: string,
   duration: number = 60,
-  videoSource: string = "ai"
+  videoSource: string = "ai",
+  uploadYoutube: boolean = false
 ): Promise<Job> {
   const res = await fetch(`${API_BASE}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ theme, duration, video_source: videoSource }),
+    body: JSON.stringify({ theme, duration, video_source: videoSource, upload_youtube: uploadYoutube }),
   });
   if (!res.ok) throw new Error(`Generation failed: ${res.statusText}`);
   return res.json();

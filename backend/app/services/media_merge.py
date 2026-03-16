@@ -46,7 +46,7 @@ def concat_clips_with_crossfade(clip_paths: list[Path], target_duration: int = 6
 
     # Step 1: Normalize all clips to same resolution/fps, optionally slow down
     for i in range(num_clips):
-        base_filter = f"[{i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30"
+        base_filter = f"[{i}:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1,fps=30"
         if slowdown > 1.0:
             base_filter += f",setpts={slowdown}*PTS"
         filter_parts.append(f"{base_filter}[slow{i}]")

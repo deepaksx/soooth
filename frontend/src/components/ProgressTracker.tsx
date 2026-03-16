@@ -3,17 +3,20 @@ import type { Job } from "../api/client";
 
 const STEPS = [
   { key: "pending", label: "Preparing job" },
-  { key: "generating", label: "Generating 4 video clips + music" },
-  { key: "merging", label: "Slowing down, crossfading & merging" },
+  { key: "generating", label: "Downloading clips + composing music" },
+  { key: "merging", label: "Crossfading & merging" },
+  { key: "uploading", label: "Uploading to YouTube" },
   { key: "complete", label: "Done!" },
 ];
 
 const STATUS_DETAIL: Record<string, string> = {
   pending: "Setting up generation pipeline...",
   generating:
-    "Creating 4 unique AI video clips (Kling Pro) and composing music (Stable Audio) in parallel. This takes 3-5 minutes.",
+    "Downloading video clips and composing music (ElevenLabs) in parallel.",
   merging:
-    "Slowing clips to half speed, applying smooth frame interpolation, crossfading transitions, and mixing with audio. ~1-2 minutes.",
+    "Normalizing clips, applying crossfade transitions, and mixing with audio.",
+  uploading:
+    "Uploading your video to YouTube...",
   complete: "Your soothing video is ready!",
   failed: "Something went wrong.",
 };

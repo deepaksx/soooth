@@ -17,6 +17,7 @@ async def generate_video(request: GenerateRequest, db: Session = Depends(get_db)
     job = Job(
         theme=request.theme,
         video_source=request.video_source,
+        upload_youtube="true" if request.upload_youtube else "false",
         video_prompt=video_prompt,
         music_prompt=music_prompt,
         duration=request.duration,

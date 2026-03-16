@@ -3,9 +3,10 @@ import { getVideoUrl } from "../api/client";
 interface Props {
   jobId: string;
   theme: string;
+  youtubeId?: string | null;
 }
 
-export function VideoPlayer({ jobId, theme }: Props) {
+export function VideoPlayer({ jobId, theme, youtubeId }: Props) {
   const videoUrl = getVideoUrl(jobId);
 
   return (
@@ -18,6 +19,16 @@ export function VideoPlayer({ jobId, theme }: Props) {
         <a href={videoUrl} download={`soooth-${theme}.mp4`} className="download-btn">
           Download Video
         </a>
+        {youtubeId && (
+          <a
+            href={`https://www.youtube.com/watch?v=${youtubeId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="youtube-btn"
+          >
+            View on YouTube
+          </a>
+        )}
       </div>
     </div>
   );

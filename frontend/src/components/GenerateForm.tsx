@@ -10,17 +10,28 @@ const THEMES = [
   { id: "study_babe", label: "Study Babe", emoji: "📚", desc: "Glamorous study in dreamy world", stock: false },
 ];
 
+const DURATIONS = [
+  { value: 60, label: "1 min" },
+  { value: 300, label: "5 min" },
+  { value: 600, label: "10 min" },
+  { value: 0, label: "Custom" },
+];
+
 interface Props {
-  onGenerate: (theme: string, duration: number, videoSource: string) => void;
+  onGenerate: (theme: string, duration: number, videoSource: string, uploadYoutube: boolean) => void;
   disabled: boolean;
 }
 
 export function GenerateForm({ onGenerate, disabled }: Props) {
   const [selected, setSelected] = useState("forest");
-  const [videoSource, setVideoSource] = useState<"ai" | "stock">("ai");
+  const [videoSource, setVideoSource] = useState<"ai" | "stock">("stock");
+  const [durationOption, setDurationOption] = useState(60);
+  const [customDuration, setCustomDuration] = useState(120);
+  const [uploadYoutube, setUploadYoutube] = useState(false);
 
   const selectedTheme = THEMES.find((t) => t.id === selected);
   const stockAvailable = selectedTheme?.stock ?? false;
+  const finalDuration = durationOption === 0 ? customDuration : durationOption;
 
   return (
     <div className="generate-form">
@@ -70,12 +81,54 @@ export function GenerateForm({ onGenerate, disabled }: Props) {
         </span>
       </div>
 
+      {/* Duration selector */}
+      <div className="duration-toggle">
+        <span className="source-label">Duration:</span>
+        {DURATIONS.map((d) => (
+          <button
+            key={d.value}
+            className={`source-btn ${durationOption === d.value ? "active" : ""}`}
+            onClick={() => setDurationOption(d.value)}
+            disabled={disabled}
+          >
+            {d.label}
+          </button>
+        ))}
+        {durationOption === 0 && (
+          <div className="custom-duration">
+            <input
+              type="number"
+              min={30}
+              max={1800}
+              value={customDuration}
+              onChange={(e) => setCustomDuration(Math.max(30, Number(e.target.value)))}
+              disabled={disabled}
+              className="custom-duration-input"
+            />
+            <span className="source-hint">seconds (30-1800)</span>
+          </div>
+        )}
+      </div>
+
+      {/* YouTube upload toggle */}
+      <div className="youtube-toggle">
+        <label className="toggle-label">
+          <input
+            type="checkbox"
+            checked={uploadYoutube}
+            onChange={(e) => setUploadYoutube(e.target.checked)}
+            disabled={disabled}
+          />
+          <span className="toggle-text">Auto-upload to YouTube</span>
+        </label>
+      </div>
+
       <button
         className="generate-btn"
-        onClick={() => onGenerate(selected, 60, videoSource)}
+        onClick={() => onGenerate(selected, finalDuration, videoSource, uploadYoutube)}
         disabled={disabled}
       >
-        {disabled ? "Generating..." : "Generate Soothing Video"}
+        {disabled ? "Generating..." : `Generate ${finalDuration >= 60 ? `${Math.floor(finalDuration / 60)}m${finalDuration % 60 ? ` ${finalDuration % 60}s` : ""}` : `${finalDuration}s`} Soothing Video`}
       </button>
     </div>
   );
