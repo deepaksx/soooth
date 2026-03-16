@@ -199,6 +199,8 @@ class S3CacheService:
                     video.last_used = datetime.now(timezone.utc)
                 db.commit()
 
+                # Detach objects from session so they can be used after session closes
+                db.expunge_all()
                 return cached
             else:
                 logger.info(f"Not enough cached videos ({len(cached)}/{min_count}) for themes: {themes}")
@@ -213,7 +215,11 @@ class S3CacheService:
 
         db = SessionLocal()
         try:
-            return db.query(VideoCache).filter(VideoCache.pixabay_id == pixabay_id).first()
+            cached = db.query(VideoCache).filter(VideoCache.pixabay_id == pixabay_id).first()
+            if cached:
+                # Detach object from session so it can be used after session closes
+                db.expunge(cached)
+            return cached
         finally:
             db.close()
 
