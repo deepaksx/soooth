@@ -11,24 +11,28 @@ interface VideoFile {
   last_modified: string;
 }
 
+type FolderType = "videos" | "audio" | "output";
+
 export function Library() {
-  const [videos, setVideos] = useState<VideoFile[]>([]);
+  const [activeFolder, setActiveFolder] = useState<FolderType>("output");
+  const [files, setFiles] = useState<VideoFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<{ filename: string; url: string } | null>(null);
 
   useEffect(() => {
-    loadVideos();
-  }, []);
+    loadFiles(activeFolder);
+  }, [activeFolder]);
 
-  const loadVideos = async () => {
+  const loadFiles = async (folder: FolderType) => {
+    setLoading(true);
     try {
       // Use S3 library for production (persistent storage)
-      const res = await fetch(`${API_BASE}/library/output`);
+      const res = await fetch(`${API_BASE}/library/${folder}`);
       const data = await res.json();
-      setVideos(data.files || []);
+      setFiles(data.files || []);
     } catch (err) {
-      console.error("Failed to load videos:", err);
+      console.error(`Failed to load ${folder}:`, err);
     } finally {
       setLoading(false);
     }
@@ -80,58 +84,119 @@ export function Library() {
     return (bytes / (1024 * 1024)).toFixed(2);
   };
 
+  const getFolderLabel = (folder: FolderType) => {
+    switch (folder) {
+      case "videos": return "📹 Stock Clips";
+      case "audio": return "🎵 Audio Files";
+      case "output": return "🎬 Final Videos";
+    }
+  };
+
+  const getFolderEmptyMessage = (folder: FolderType) => {
+    switch (folder) {
+      case "videos": return "No stock video clips cached yet. Generate a video to download clips.";
+      case "audio": return "No audio files generated yet. Create a video with audio.";
+      case "output": return "No output videos yet. Generate your first video!";
+    }
+  };
+
+  const isVideo = (key: string) => key.endsWith('.mp4') || key.endsWith('.webm');
+  const isAudio = (key: string) => key.endsWith('.mp3') || key.endsWith('.wav') || key.endsWith('.m4a');
+
   if (loading) {
-    return <div className="library">Loading videos...</div>;
+    return <div className="library">Loading {activeFolder}...</div>;
   }
 
   return (
     <div className="library">
-      <h2>Video Library ({videos.length} videos)</h2>
+      <div className="library-header">
+        <h2>AWS S3 Media Library</h2>
+        <div className="library-tabs">
+          <button
+            className={`library-tab ${activeFolder === "output" ? "active" : ""}`}
+            onClick={() => setActiveFolder("output")}
+          >
+            {getFolderLabel("output")} ({files.length})
+          </button>
+          <button
+            className={`library-tab ${activeFolder === "videos" ? "active" : ""}`}
+            onClick={() => setActiveFolder("videos")}
+          >
+            {getFolderLabel("videos")}
+          </button>
+          <button
+            className={`library-tab ${activeFolder === "audio" ? "active" : ""}`}
+            onClick={() => setActiveFolder("audio")}
+          >
+            {getFolderLabel("audio")}
+          </button>
+        </div>
+      </div>
 
-      {videos.length === 0 ? (
-        <p className="library-empty">No videos in output folder yet. Generate some videos first!</p>
+      {files.length === 0 ? (
+        <p className="library-empty">{getFolderEmptyMessage(activeFolder)}</p>
       ) : (
         <div className="library-grid">
-          {videos.map((video) => (
+          {files.map((video) => (
             <div key={video.key} className="library-card">
-              <div className="library-video">
-                <video
-                  controls
-                  preload="metadata"
-                  className="library-video-player"
-                  src={video.url}
-                />
+              <div className="library-media">
+                {isVideo(video.key) ? (
+                  <video
+                    controls
+                    preload="metadata"
+                    className="library-video-player"
+                    src={video.url}
+                  />
+                ) : isAudio(video.key) ? (
+                  <div className="library-audio-player">
+                    🎵
+                    <audio controls src={video.url} />
+                  </div>
+                ) : (
+                  <div className="library-file-icon">📄</div>
+                )}
               </div>
 
               <div className="library-info">
-                <div className="library-filename">{getFilename(video.key)}</div>
+                <div className="library-filename" title={video.key}>
+                  {getFilename(video.key)}
+                </div>
                 <div className="library-meta">
                   {formatSize(video.size)} MB • {formatDate(video.last_modified)}
                 </div>
-
-                <button
-                  className="library-upload-btn"
-                  onClick={() => uploadToYouTube(video)}
-                  disabled={uploading === video.key}
-                >
-                  {uploading === video.key ? (
-                    <span>⏳ Uploading...</span>
-                  ) : uploadResult?.filename === video.key ? (
-                    <span>✅ Uploaded</span>
-                  ) : (
-                    <span>📤 Upload to YouTube</span>
-                  )}
-                </button>
-
-                {uploadResult?.filename === video.key && (
-                  <a
-                    href={uploadResult.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="library-youtube-link"
-                  >
-                    🎥 View on YouTube
+                <div className="library-url">
+                  <a href={video.url} target="_blank" rel="noopener noreferrer">
+                    🔗 Direct Link
                   </a>
+                </div>
+
+                {activeFolder === "output" && isVideo(video.key) && (
+                  <>
+                    <button
+                      className="library-upload-btn"
+                      onClick={() => uploadToYouTube(video)}
+                      disabled={uploading === video.key}
+                    >
+                      {uploading === video.key ? (
+                        <span>⏳ Uploading...</span>
+                      ) : uploadResult?.filename === video.key ? (
+                        <span>✅ Uploaded</span>
+                      ) : (
+                        <span>📤 Upload to YouTube</span>
+                      )}
+                    </button>
+
+                    {uploadResult?.filename === video.key && (
+                      <a
+                        href={uploadResult.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="library-youtube-link"
+                      >
+                        🎥 View on YouTube
+                      </a>
+                    )}
+                  </>
                 )}
               </div>
             </div>

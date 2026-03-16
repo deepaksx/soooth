@@ -657,3 +657,85 @@ body {
 .library-youtube-link:hover {
   background: #1a2a25;
 }
+
+/* Library Header and Tabs */
+.library-header {
+  margin-bottom: 2rem;
+}
+
+.library-header h2 {
+  margin-bottom: 1rem;
+  color: #7cb8a0;
+}
+
+.library-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.library-tab {
+  padding: 0.6rem 1.2rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.library-tab:hover {
+  border-color: #7cb8a0;
+  color: #7cb8a0;
+}
+
+.library-tab.active {
+  background: #1a2a25;
+  border-color: #7cb8a0;
+  color: #7cb8a0;
+}
+
+/* Library Media Display */
+.library-media {
+  width: 100%;
+  height: 200px;
+  background: #000;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.library-audio-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  font-size: 2rem;
+}
+
+.library-audio-player audio {
+  width: 100%;
+  max-width: 250px;
+}
+
+.library-file-icon {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.library-url {
+  margin: 0.5rem 0;
+  font-size: 0.75rem;
+}
+
+.library-url a {
+  color: #666;
+  text-decoration: none;
+}
+
+.library-url a:hover {
+  color: #7cb8a0;
+}
