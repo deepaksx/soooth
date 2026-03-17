@@ -57,6 +57,32 @@ SessionLocal = sessionmaker(bind=engine)
 
 Base.metadata.create_all(bind=engine)
 
+# Auto-migration: Add custom_audio_filename column if it doesn't exist
+try:
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        # Check if column exists (PostgreSQL/SQLite compatible)
+        if settings.database_url.startswith("sqlite"):
+            result = conn.execute(text("PRAGMA table_info(jobs)"))
+            columns = [row[1] for row in result]
+        else:
+            # PostgreSQL
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='jobs' AND column_name='custom_audio_filename'
+            """))
+            columns = [row[0] for row in result]
+
+        if 'custom_audio_filename' not in columns:
+            print("Running migration: Adding custom_audio_filename column...")
+            conn.execute(text("ALTER TABLE jobs ADD COLUMN custom_audio_filename VARCHAR"))
+            conn.commit()
+            print("Migration complete: custom_audio_filename column added")
+except Exception as e:
+    print(f"Migration check failed (column may already exist): {e}")
+    pass
+
 
 def get_db():
     db = SessionLocal()
