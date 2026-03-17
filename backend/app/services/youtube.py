@@ -17,24 +17,58 @@ TOKEN_FILE = Path(__file__).parent.parent.parent.parent / "youtube_token.json"
 
 
 def get_youtube_service():
-    """Get authenticated YouTube API service. Uses saved token or triggers OAuth flow."""
+    """Get authenticated YouTube API service.
+
+    Supports both file-based (local dev) and env-based (production) credentials.
+    """
     creds = None
 
-    # Load saved token
-    if TOKEN_FILE.exists():
+    # Try environment variables first (for Render deployment)
+    youtube_token_json = os.getenv("YOUTUBE_TOKEN_JSON")
+    youtube_client_json = os.getenv("YOUTUBE_CLIENT_JSON")
+
+    if youtube_token_json:
+        # Load credentials from environment variable
+        logger.info("Using YouTube credentials from environment variables")
+        try:
+            token_data = json.loads(youtube_token_json)
+            creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+
+            # Refresh if expired
+            if creds and creds.expired and creds.refresh_token:
+                logger.info("Refreshing expired YouTube token")
+                creds.refresh(Request())
+                # Note: Updated token is not saved back to env var (manual update needed)
+
+        except Exception as e:
+            logger.error(f"Failed to load YouTube credentials from env: {e}")
+            raise RuntimeError("YouTube upload not configured. Missing or invalid YOUTUBE_TOKEN_JSON environment variable.")
+
+    elif TOKEN_FILE.exists():
+        # Fall back to file-based credentials (local development)
+        logger.info("Using YouTube credentials from local files")
         creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
 
-    # Refresh or get new token
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(str(CLIENT_SECRET_FILE), SCOPES)
-            creds = flow.run_local_server(port=8090, open_browser=True)
+        # Refresh or get new token
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                if not CLIENT_SECRET_FILE.exists():
+                    raise RuntimeError("YouTube client secrets file not found. Please add youtube.json or set YOUTUBE_CLIENT_JSON environment variable.")
+                flow = InstalledAppFlow.from_client_secrets_file(str(CLIENT_SECRET_FILE), SCOPES)
+                creds = flow.run_local_server(port=8090, open_browser=True)
 
-        # Save token for future use
-        with open(TOKEN_FILE, "w") as f:
-            f.write(creds.to_json())
+            # Save token for future use
+            with open(TOKEN_FILE, "w") as f:
+                f.write(creds.to_json())
+    else:
+        # No credentials available
+        raise RuntimeError(
+            "YouTube upload not configured. Please either:\n"
+            "1. Run authentication locally first to generate youtube_token.json, OR\n"
+            "2. Set YOUTUBE_TOKEN_JSON environment variable in Render"
+        )
 
     return build("youtube", "v3", credentials=creds)
 
