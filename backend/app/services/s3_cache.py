@@ -93,8 +93,8 @@ class S3CacheService:
             logger.error(f"Failed to upload video to S3: {e}")
             return None
 
-    def upload_audio(self, local_path: Path, job_id: str) -> Optional[str]:
-        """Upload generated audio to S3 (audio/ folder)."""
+    def upload_audio(self, local_path: Path, job_id: str, original_filename: str = None) -> Optional[str]:
+        """Upload generated audio to S3 (audio/ folder) with optional original filename metadata."""
         if not self.enabled:
             return None
 
@@ -102,11 +102,16 @@ class S3CacheService:
             file_ext = local_path.suffix
             s3_key = f"audio/{job_id}{file_ext}"
 
+            # Build ExtraArgs with metadata if original filename is provided
+            extra_args = {'ContentType': 'audio/mpeg'}
+            if original_filename:
+                extra_args['Metadata'] = {'original-filename': original_filename}
+
             self.s3_client.upload_file(
                 str(local_path),
                 self.bucket,
                 s3_key,
-                ExtraArgs={'ContentType': 'audio/mpeg'}
+                ExtraArgs=extra_args
             )
 
             s3_url = f"https://{self.bucket}.s3.{settings.aws_region}.amazonaws.com/{s3_key}"
@@ -141,7 +146,7 @@ class S3CacheService:
             return None
 
     def list_library(self, folder: str = "output", limit: int = 100) -> list[dict]:
-        """List files in S3 library (audio, videos, or output)."""
+        """List files in S3 library (audio, videos, or output) with metadata."""
         if not self.enabled:
             return []
 
@@ -154,12 +159,24 @@ class S3CacheService:
 
             files = []
             for obj in response.get('Contents', []):
-                files.append({
+                file_data = {
                     'key': obj['Key'],
                     'url': f"https://{self.bucket}.s3.{settings.aws_region}.amazonaws.com/{obj['Key']}",
                     'size': obj['Size'],
                     'last_modified': obj['LastModified'].isoformat()
-                })
+                }
+
+                # For audio files, fetch metadata to get original filename
+                if folder == "audio":
+                    try:
+                        head_response = self.s3_client.head_object(Bucket=self.bucket, Key=obj['Key'])
+                        metadata = head_response.get('Metadata', {})
+                        if 'original-filename' in metadata:
+                            file_data['original_filename'] = metadata['original-filename']
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch metadata for {obj['Key']}: {e}")
+
+                files.append(file_data)
 
             logger.info(f"Listed {len(files)} files from S3 {folder}/ folder")
             return files

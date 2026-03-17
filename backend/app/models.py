@@ -20,6 +20,7 @@ class Job(Base):
     video_path = Column(String, nullable=True)
     audio_path = Column(String, nullable=True)
     custom_audio_path = Column(String, nullable=True)  # User-uploaded audio file
+    custom_audio_filename = Column(String, nullable=True)  # Original filename of uploaded audio
     output_path = Column(String, nullable=True)
     duration = Column(Integer, default=60)
     upload_youtube = Column(String, default="false")

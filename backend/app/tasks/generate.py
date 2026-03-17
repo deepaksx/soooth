@@ -84,9 +84,10 @@ async def run_generation_pipeline(job_id: str, db_session_factory):
         job.status = "merging"
         db.commit()
 
-        # Upload audio to S3
+        # Upload audio to S3 with original filename metadata if custom audio was used
         if s3_cache.enabled:
-            s3_cache.upload_audio(audio_path, job_id)
+            original_filename = job.custom_audio_filename if job.custom_audio_path else None
+            s3_cache.upload_audio(audio_path, job_id, original_filename=original_filename)
 
         # Stock footage is already smooth — no slowdown needed
         slowdown = 1.0 if job.video_source == "stock" else 2.0

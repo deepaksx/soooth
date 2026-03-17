@@ -9,6 +9,7 @@ interface VideoFile {
   url: string;
   size: number;
   last_modified: string;
+  original_filename?: string;
 }
 
 type FolderType = "videos" | "audio" | "output";
@@ -93,7 +94,7 @@ export function Library() {
       // Remove from local state
       setFiles(files.filter(f => f.key !== video.key));
       setConfirmDelete(null);
-      alert(`✅ Deleted successfully: ${getFilename(video.key)}`);
+      alert(`✅ Deleted successfully: ${getFilename(video.key, video.original_filename)}`);
     } catch (err: any) {
       alert(`❌ Delete failed: ${err.message}`);
     } finally {
@@ -106,8 +107,8 @@ export function Library() {
     return date.toLocaleString();
   };
 
-  const getFilename = (key: string) => {
-    return key.split('/').pop() || key;
+  const getFilename = (key: string, originalFilename?: string) => {
+    return originalFilename || key.split('/').pop() || key;
   };
 
   const formatSize = (bytes: number) => {
@@ -188,8 +189,8 @@ export function Library() {
               </div>
 
               <div className="library-info">
-                <div className="library-filename" title={video.key}>
-                  {getFilename(video.key)}
+                <div className="library-filename" title={video.original_filename || video.key}>
+                  {getFilename(video.key, video.original_filename)}
                 </div>
                 <div className="library-meta">
                   {formatSize(video.size)} MB • {formatDate(video.last_modified)}

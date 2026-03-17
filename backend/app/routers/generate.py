@@ -32,11 +32,13 @@ async def generate_video(
 
     # Handle custom audio file upload
     custom_audio_path_str = None
+    custom_audio_filename = None
     if custom_audio:
         audio_dir = settings.media_dir / "audio"
         audio_dir.mkdir(parents=True, exist_ok=True)
 
         # Save uploaded audio file
+        custom_audio_filename = custom_audio.filename  # Store original filename
         file_ext = Path(custom_audio.filename).suffix or ".mp3"
         custom_audio_path = audio_dir / f"{uuid.uuid4()}_custom{file_ext}"
 
@@ -66,6 +68,7 @@ async def generate_video(
             music_prompt=music_prompt,
             duration=duration,
             custom_audio_path=custom_audio_path_str,
+            custom_audio_filename=custom_audio_filename,
         )
         db.add(job)
         db.commit()
