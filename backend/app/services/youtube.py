@@ -31,7 +31,16 @@ def get_youtube_service():
         # Load credentials from environment variable
         logger.info("Using YouTube credentials from environment variables")
         try:
-            token_data = json.loads(youtube_token_json)
+            # Clean the JSON string by removing control characters
+            import re
+            cleaned_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', youtube_token_json)
+
+            # Log for debugging (first 50 chars only to avoid exposing full tokens)
+            logger.info(f"Raw JSON length: {len(youtube_token_json)}, Cleaned length: {len(cleaned_json)}")
+            if len(youtube_token_json) != len(cleaned_json):
+                logger.warning(f"Removed {len(youtube_token_json) - len(cleaned_json)} control characters from JSON")
+
+            token_data = json.loads(cleaned_json)
             creds = Credentials.from_authorized_user_info(token_data, SCOPES)
 
             # Refresh if expired
@@ -40,6 +49,10 @@ def get_youtube_service():
                 creds.refresh(Request())
                 # Note: Updated token is not saved back to env var (manual update needed)
 
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse YouTube credentials JSON: {e}")
+            logger.error(f"Character at error position: {repr(youtube_token_json[max(0, e.pos-10):e.pos+10])}")
+            raise RuntimeError("YouTube upload not configured. Invalid JSON format in YOUTUBE_TOKEN_JSON environment variable.")
         except Exception as e:
             logger.error(f"Failed to load YouTube credentials from env: {e}")
             raise RuntimeError("YouTube upload not configured. Missing or invalid YOUTUBE_TOKEN_JSON environment variable.")
