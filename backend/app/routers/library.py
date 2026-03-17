@@ -118,12 +118,20 @@ class DeleteFileRequest(BaseModel):
 
 @router.post("/upload-to-youtube")
 async def upload_video_to_youtube(request: UploadVideoRequest):
-    """Upload an existing video from output folder to YouTube."""
+    """Upload an existing video from S3 or output folder to YouTube."""
     output_dir = settings.media_dir / "output"
     video_path = output_dir / request.filename
 
+    # If file doesn't exist locally, try downloading from S3
     if not video_path.exists():
-        raise HTTPException(status_code=404, detail=f"Video file not found: {request.filename}")
+        if s3_cache.enabled:
+            logger.info(f"Video not found locally, downloading from S3: {request.filename}")
+            # Try to download from S3
+            s3_key = f"output/{request.filename}"
+            if not s3_cache.download_video(s3_key, video_path):
+                raise HTTPException(status_code=404, detail=f"Video file not found in local storage or S3: {request.filename}")
+        else:
+            raise HTTPException(status_code=404, detail=f"Video file not found: {request.filename}")
 
     try:
         logger.info(f"Uploading {request.filename} to YouTube with SEO optimization...")
