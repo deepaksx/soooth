@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BulkDownloader } from "./BulkDownloader";
 
 const API_BASE = import.meta.env.PROD
   ? "https://soooth-backend.onrender.com/api"
@@ -163,6 +164,9 @@ export function Library() {
           </button>
         </div>
       </div>
+
+      {/* Bulk Download Manager - only show on videos tab */}
+      {activeFolder === "videos" && <BulkDownloader />}
 
       {files.length === 0 ? (
         <p className="library-empty">{getFolderEmptyMessage(activeFolder)}</p>

@@ -4,7 +4,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import generate, videos, library
+from app.routers import generate, videos, library, admin
 
 app = FastAPI(
     title="Soooth",
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(generate.router)
 app.include_router(videos.router)
 app.include_router(library.router)
+app.include_router(admin.router)
 
 
 @app.get("/api/health")
