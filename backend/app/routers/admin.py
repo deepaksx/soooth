@@ -251,7 +251,7 @@ async def get_bulk_download_status():
         videos_downloaded=bulk_download_state["videos_downloaded"],
         current_theme_progress=bulk_download_state["current_theme_progress"],
         error=bulk_download_state["error"],
-        s3_enabled=s3_cache.enabled,
+        s3_enabled=bool(s3_cache.enabled),
         pixabay_configured=bool(settings.pixabay_api_key),
     )
 
