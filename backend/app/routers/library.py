@@ -136,6 +136,21 @@ async def upload_video_to_youtube(request: UploadVideoRequest):
     try:
         logger.info(f"Uploading {request.filename} to YouTube with SEO optimization...")
 
+        # Try to find the job by filename (filename format: job_id.mp4)
+        job_id = request.filename.replace('.mp4', '')
+        custom_audio_title = None
+
+        from app.models import Job, SessionLocal
+        db = SessionLocal()
+        try:
+            job = db.query(Job).filter(Job.id == job_id).first()
+            if job and job.custom_audio_filename:
+                # Use original audio filename as YouTube title (without extension)
+                custom_audio_title = job.custom_audio_filename.rsplit('.', 1)[0]
+                logger.info(f"Found custom audio filename: {custom_audio_title}")
+        finally:
+            db.close()
+
         # Auto-detect theme from filename
         theme = "forest"  # Default theme
         filename_lower = request.filename.lower()
@@ -168,14 +183,19 @@ async def upload_video_to_youtube(request: UploadVideoRequest):
         except:
             pass
 
+        # Use custom audio filename as title if available, otherwise use request title
+        final_title = custom_audio_title or request.title
+
         # Log detected metadata
         logger.info(f"Detected theme: {theme}, duration: {duration_minutes} minutes")
+        logger.info(f"Custom audio title: {custom_audio_title}")
         logger.info(f"Request title: {request.title}, description: {request.description}")
+        logger.info(f"Final title: {final_title}")
 
         # Upload with full SEO optimization
         video_id = upload_to_youtube(
             video_path=str(video_path),
-            title=request.title,  # Will be None for auto-SEO
+            title=final_title,  # Use custom audio filename or request title, or auto-SEO
             description=request.description,  # Will be None for auto-SEO
             theme=theme,
             duration_minutes=duration_minutes,

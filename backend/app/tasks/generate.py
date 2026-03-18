@@ -138,9 +138,17 @@ async def run_generation_pipeline(job_id: str, db_session_factory):
                 primary_theme = job.theme.split(",")[0] if "," in job.theme else job.theme
                 duration_minutes = job.duration // 60 if job.duration >= 60 else 1
 
+                # Use custom audio filename as title if available
+                custom_audio_title = None
+                if job.custom_audio_filename:
+                    # Remove file extension from audio filename
+                    custom_audio_title = job.custom_audio_filename.rsplit('.', 1)[0]
+                    logger.info(f"Using custom audio filename as YouTube title: {custom_audio_title}")
+
                 # Upload with full SEO optimization
                 video_id = upload_to_youtube(
                     str(output_path),
+                    title=custom_audio_title,  # Use custom audio filename as title, or auto-SEO
                     theme=primary_theme,
                     duration_minutes=duration_minutes,
                     privacy="public"
