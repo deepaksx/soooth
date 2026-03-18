@@ -54,6 +54,8 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
                         "per_page": 20,
                         "safesearch": "true",
                         "order": "popular",
+                        "min_width": 1920,  # HD minimum for high quality
+                        "min_height": 1080,
                     },
                 )
                 if resp.status_code == 200:
@@ -74,6 +76,8 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
                     "per_page": 50,
                     "safesearch": "true",
                     "order": "popular",
+                    "min_width": 1920,  # HD minimum for high quality
+                    "min_height": 1080,
                 },
             )
             resp.raise_for_status()
@@ -149,21 +153,21 @@ async def search_and_download_videos(query: str, target_duration: int = 60, them
         return clip_paths
 
 
-# Search terms for each theme
+# Search terms for each theme (optimized for 4K/HD quality)
 PIXABAY_SEARCH_TERMS = {
-    "forest": "misty forest sunrise drone nature",
-    "ocean": "ocean waves beach sunset aerial",
-    "rain": "rain drops leaves nature close up",
-    "mountain": "mountain peaks clouds sunrise aerial",
-    "meadow": "wildflower meadow breeze nature",
-    "starry_night": "milky way stars night sky timelapse",
-    "sunset": "sunset golden hour horizon nature",
-    "waterfall": "waterfall cascade water nature",
-    "lake": "lake reflection calm water nature",
-    "beach": "beach sandy shore waves ocean",
-    "clouds": "clouds sky timelapse nature",
-    "snow": "snow winter snowfall nature",
-    "desert": "desert sand dunes sunset nature",
-    "aurora": "aurora northern lights night sky",
-    "flowers": "flowers blooming nature closeup",
+    "forest": "misty forest sunrise drone nature 4k",
+    "ocean": "ocean waves beach sunset aerial 4k",
+    "rain": "rain drops leaves nature close up 4k",
+    "mountain": "mountain peaks clouds sunrise aerial 4k",
+    "meadow": "wildflower meadow breeze nature 4k",
+    "starry_night": "milky way stars night sky timelapse 4k",
+    "sunset": "sunset golden hour horizon nature 4k",
+    "waterfall": "waterfall cascade water nature 4k",
+    "lake": "lake reflection calm water nature 4k",
+    "beach": "beach sandy shore waves ocean 4k",
+    "clouds": "clouds sky timelapse nature 4k",
+    "snow": "snow winter snowfall nature 4k",
+    "desert": "desert sand dunes sunset nature 4k",
+    "aurora": "aurora northern lights night sky 4k",
+    "flowers": "flowers blooming nature closeup 4k",
 }
