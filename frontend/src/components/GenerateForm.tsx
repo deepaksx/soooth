@@ -40,6 +40,7 @@ interface Props {
 export function GenerateForm({ onGenerate, disabled }: Props) {
   const [tab, setTab] = useState<"ai" | "stock">("stock");
   const [selectedThemes, setSelectedThemes] = useState<string[]>(["forest"]);
+  const [randomMode, setRandomMode] = useState(false);
   const [audioMode, setAudioMode] = useState<"ai" | "custom">("ai");
   const [durationOption, setDurationOption] = useState(60);
   const [customDuration, setCustomDuration] = useState(120);
@@ -80,7 +81,18 @@ export function GenerateForm({ onGenerate, disabled }: Props) {
     );
   };
 
-  const theme = tab === "ai" ? "study_babe" : selectedThemes.join(",");
+  const toggleRandomMode = () => {
+    setRandomMode(!randomMode);
+    if (!randomMode) {
+      // When enabling random mode, clear selected themes
+      setSelectedThemes([]);
+    } else {
+      // When disabling random mode, default to forest
+      setSelectedThemes(["forest"]);
+    }
+  };
+
+  const theme = tab === "ai" ? "study_babe" : randomMode ? "random" : selectedThemes.join(",");
   const videoSource = tab === "ai" ? "ai" : "stock";
 
   return (
@@ -174,13 +186,42 @@ export function GenerateForm({ onGenerate, disabled }: Props) {
       {tab === "stock" && (
         <>
           <h2>Choose themes (multi-select)</h2>
+
+          {/* Random Mode Button */}
+          <div style={{ marginBottom: "15px" }}>
+            <button
+              className={`source-btn ${randomMode ? "active" : ""}`}
+              onClick={toggleRandomMode}
+              disabled={disabled}
+              style={{
+                padding: "12px 24px",
+                fontSize: "1rem",
+                fontWeight: "bold",
+                background: randomMode ? "#7cb8a0" : "transparent",
+                border: randomMode ? "2px solid #7cb8a0" : "2px solid #555",
+                color: randomMode ? "#0a0a0f" : "#7cb8a0",
+              }}
+            >
+              🎲 {randomMode ? "Random Mode Active" : "Random Mix"}
+            </button>
+            <span className="source-hint" style={{ marginLeft: "15px" }}>
+              {randomMode
+                ? "Videos will be picked randomly from ALL themes"
+                : "Click to randomly mix videos from all available themes"}
+            </span>
+          </div>
+
           <div className="theme-grid-multi">
             {STOCK_THEMES.map((theme) => (
               <button
                 key={theme.id}
                 className={`theme-card-small ${selectedThemes.includes(theme.id) ? "selected" : ""}`}
                 onClick={() => toggleTheme(theme.id)}
-                disabled={disabled}
+                disabled={disabled || randomMode}
+                style={{
+                  opacity: randomMode ? 0.5 : 1,
+                  cursor: randomMode ? "not-allowed" : "pointer",
+                }}
               >
                 <span className="theme-emoji-small">{theme.emoji}</span>
                 <span className="theme-label-small">{theme.label}</span>
@@ -188,7 +229,9 @@ export function GenerateForm({ onGenerate, disabled }: Props) {
             ))}
           </div>
           <div className="source-hint" style={{ marginTop: "10px" }}>
-            {selectedThemes.length === 0
+            {randomMode
+              ? "🎲 Random mode enabled - all themes available"
+              : selectedThemes.length === 0
               ? "⚠️ Select at least one theme"
               : selectedThemes.length === 1
               ? `✓ ${selectedThemes.length} theme selected`
@@ -324,14 +367,14 @@ export function GenerateForm({ onGenerate, disabled }: Props) {
           tab === "ai" ? batchCount : 1,
           audioMode === "custom" ? customAudio || undefined : undefined
         )}
-        disabled={disabled || (audioMode === "custom" && !customAudio) || (tab === "stock" && selectedThemes.length === 0)}
+        disabled={disabled || (audioMode === "custom" && !customAudio) || (tab === "stock" && !randomMode && selectedThemes.length === 0)}
       >
         {disabled
           ? "Generating..."
           : audioMode === "custom" && !customAudio
           ? "Upload audio to continue"
-          : tab === "stock" && selectedThemes.length === 0
-          ? "Select at least one theme"
+          : tab === "stock" && !randomMode && selectedThemes.length === 0
+          ? "Select at least one theme or enable Random"
           : `Generate ${tab === "ai" && batchCount > 1 ? `${batchCount} × ` : ""}${finalDuration >= 60 ? `${Math.floor(finalDuration / 60)}m${finalDuration % 60 ? ` ${finalDuration % 60}s` : ""}` : `${finalDuration}s`} ${tab === "ai" && batchCount > 1 ? "Videos" : "Video"}`}
       </button>
     </div>

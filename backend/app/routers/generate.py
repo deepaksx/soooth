@@ -6,8 +6,10 @@ from app.tasks.generate import start_pipeline
 from app.config import settings
 from pathlib import Path
 import uuid
+import logging
 from typing import Optional
 
+logger = logging.getLogger("soooth.generate")
 router = APIRouter(prefix="/api", tags=["generate"])
 
 
@@ -26,7 +28,14 @@ async def generate_video(
 ):
     """Start new soothing video generation job(s). Supports batch generation and custom audio upload."""
     # Handle multi-theme (comma-separated string)
-    themes_list = theme.split(",") if "," in theme else [theme]
+    # Special case: "random" theme means use all available themes
+    if theme == "random":
+        from app.services.pixabay import PIXABAY_SEARCH_TERMS
+        themes_list = list(PIXABAY_SEARCH_TERMS.keys())
+        logger.info(f"Random mode: using all {len(themes_list)} themes")
+    else:
+        themes_list = theme.split(",") if "," in theme else [theme]
+
     first_theme = themes_list[0]
     theme_data = THEME_PROMPTS.get(first_theme, THEME_PROMPTS["forest"])
 
